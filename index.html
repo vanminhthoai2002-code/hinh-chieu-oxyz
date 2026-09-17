@@ -169,6 +169,24 @@ function drawScene(){
     labels.push({p:positive,text:['x','y','z'][i],color:axisColors[i],font:16,axis:true,priority:2});
     [-L/2,L/2].forEach(value=>{const p=[0,0,0];p[i]=value;const q=screen(p);if(len>50){const vx=(b.x-a.x)/len,vy=(b.y-a.y)/len;add(layer,'line',{x1:q.x-vy*3,y1:q.y+vx*3,x2:q.x+vy*3,y2:q.y-vx*3,stroke:axisColors[i],'stroke-width':.8,opacity:.55});labels.push({p,text:fmt(value),color:'#8a9289',font:10,tick:true,priority:4});}});
   });
+  // Khép kín khung hộp khi xem cả 6 hình chiếu.
+  // Ba cạnh OP, OQ, OR đã nằm trên các trục; MA, MB, MC có ở phần đường chiếu.
+  if(visible && all && state.guides){
+    const [x,y,z]=state.point;
+    const P=[x,0,0],Q=[0,y,0],R=[0,0,z];
+    const A=[x,y,0],B=[x,0,z],C=[0,y,z];
+    const frame=add(layer,'g',{'data-cuboid-guides':'true'});
+    const drawn=[];
+    const sameEdge=(a,b,c,e)=>(equalPoints(a,c)&&equalPoints(b,e))||(equalPoints(a,e)&&equalPoints(b,c));
+    [[P,A],[Q,A],[P,B],[R,B],[Q,C],[R,C]].forEach(([a,b])=>{
+      // Khi tọa độ bằng 0, bỏ cạnh co về một điểm hoặc trùng với nét đã có.
+      const onAxis=[0,1,2].some(axis=>[a,b].every(p=>p.every((v,i)=>i===axis||v===0)));
+      const projectionEdge=active.some(item=>sameEdge(a,b,state.point,projectTo(state.point,item)));
+      if(equalPoints(a,b)||onAxis||projectionEdge||drawn.some(([c,e])=>sameEdge(a,b,c,e)))return;
+      line(a,b,'#60786e',1.8,'5 5',.88,frame);
+      drawn.push([a,b]);
+    });
+  }
   // Vectơ M-H vuông góc với các phương được giữ, kể cả khi chiếu lên trục.
   if(visible&&state.guides){active.forEach(item=>{const h=projectTo(state.point,item);if(!equalPoints(state.point,h))line(state.point,h,item.color,all&&item.id!==d.id?1.4:2.15,'5 5',all&&item.id!==d.id?.5:.88);});
     const h=projectTo(state.point,d),v=state.point.map((n,i)=>n-h[i]),length=Math.hypot(...v);
